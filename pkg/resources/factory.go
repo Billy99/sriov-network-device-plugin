@@ -16,6 +16,7 @@ package resources
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/golang/glog"
 	"github.com/intel/sriov-network-device-plugin/pkg/types"
@@ -135,6 +136,13 @@ func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, deviceList 
 		filteredDevice = rdmaDevices
 	}
 
+	f, err := os.Create("/var/run/vdpa/pciList.dat")
+	if err != nil {
+		f = nil
+	} else {
+		defer f.Close()
+	}
+
 	devicePool := make(map[string]types.PciNetDevice, 0)
 	apiDevices := make(map[string]*pluginapi.Device)
 	for _, dev := range filteredDevice {
@@ -146,6 +154,11 @@ func (rf *resourceFactory) GetResourcePool(rc *types.ResourceConfig, deviceList 
 			dev.GetVendor(),
 			dev.GetDeviceCode(),
 			dev.GetDriver())
+		if f != nil {
+			_, _ = f.WriteString(pciAddr)
+			_, _ = f.WriteString("\n")
+		}
+
 	}
 
 	rPool := newResourcePool(rc, apiDevices, devicePool)

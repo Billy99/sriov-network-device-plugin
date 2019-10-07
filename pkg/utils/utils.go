@@ -66,12 +66,21 @@ func GetPfName(pciAddr string) (string, error) {
 			path := filepath.Join(sysBusPci, pciAddr, "net")
 			files, err = ioutil.ReadDir(path)
 			if err != nil {
+				if os.IsNotExist(err) {
+					path := filepath.Join(sysBusPci, pciAddr, "physfn/virtio0/net")
+					files, err = ioutil.ReadDir(path)
+					if err != nil {
+						return "", err
+					}
+					if len(files) < 1 {
+						return "", fmt.Errorf("no interface name found for device %s", pciAddr)
+					}
+					return files[0].Name(), nil
+				}
 				return "", err
+			} else if len(files) > 0 {
+				return files[0].Name(), nil
 			}
-			if len(files) < 1 {
-				return "", fmt.Errorf("no interface name found for device %s", pciAddr)
-			}
-			return files[0].Name(), nil
 		}
 		return "", err
 	} else if len(files) > 0 {
